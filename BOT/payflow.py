@@ -99,12 +99,11 @@ class PayflowGate:
                 return "Declined ❌", "Nonce Error"
             addnonce = addnonce_match.group(1)
             
-            # Step 4: Create Stripe payment method - exact data format as original (NO PROXY)
+            # Step 4: Create Stripe payment method with proxy support
             data_stripe = f'type=card&card[number]={cc}&card[cvc]={cvv}&card[exp_year]={yy}&card[exp_month]={mm}&allow_redisplay=unspecified&billing_details[address][country]=TR&payment_user_agent=stripe.js%2F3eb96675be%3B+stripe-js-v3%2F3eb96675be%3B+payment-element%3B+deferred-intent&referrer=https%3A%2F%2Flegacygames.com&time_on_page=13706&client_attribution_metadata[client_session_id]=758e76a9-5fda-4c8f-ab58-3d338b594899&client_attribution_metadata[merchant_integration_source]=elements&client_attribution_metadata[merchant_integration_subtype]=payment-element&client_attribution_metadata[merchant_integration_version]=2021&client_attribution_metadata[payment_intent_creation_flow]=deferred&client_attribution_metadata[payment_method_selection_flow]=merchant_specified&client_attribution_metadata[elements_session_config_id]=49ba8458-1fd3-4bde-b85d-30d98c7cef9a&guid=aa7c8346-057c-4871-b817-d2082e3842d790f3af&muid=915ccdf6-9a1e-4b46-b7bf-84213dd8f2e84af545&sid=a2210aa1-6aaf-4e1d-b733-a78f5af25f8605fd5c&key={pk_live}'
             
-            # Stripe API call without proxy
-            stripe_session = requests.Session()
-            response_stripe = stripe_session.post('https://api.stripe.com/v1/payment_methods', headers=self.headers, data=data_stripe, timeout=30)
+            # Stripe API call with proxy support (uses main session)
+            response_stripe = self.s.post('https://api.stripe.com/v1/payment_methods', headers=self.headers, data=data_stripe, timeout=30)
             
             try:
                 pm = response_stripe.json()['id']

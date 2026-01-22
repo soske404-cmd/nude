@@ -69,7 +69,7 @@ class StripeGate:
             return False
     
     def tok(self, cc, mm, yy, cvv):
-        """Create Stripe payment method token (NO PROXY - as per original)"""
+        """Create Stripe payment method token with proxy support"""
         try:
             h = {
                 'authority': 'api.stripe.com',
@@ -93,8 +93,8 @@ class StripeGate:
                 'muid': 'ea2ab4e5-2059-438e-b27d-3bd4d6a94ae29d8630',
                 'sid': '53c09a94-1512-4db1-b3c0-f011656359e1281fed'
             }
-            # Stripe Tokenization (No Proxy Here Always)
-            r = requests.post('https://api.stripe.com/v1/payment_methods', headers=h, data=d, timeout=30)
+            # Stripe Tokenization with proxy support
+            r = self.s.post('https://api.stripe.com/v1/payment_methods', headers=h, data=d, timeout=30)
             result = r.json()
             if 'id' in result:
                 return True, result['id']
