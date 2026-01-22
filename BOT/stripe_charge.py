@@ -434,9 +434,17 @@ def extract_card(text):
 def extract_cards(text):
     return re.findall(r'(\d{12,19}\|\d{1,2}\|\d{2,4}\|\d{3,4})', text)
 
-def check_stripe_charge(cc, mm, yy, cvv, proxy=None):
-    """Stripe $1 charge check wrapper"""
-    return check_stripe_card(cc, mm, yy, cvv, proxy)
+def check_stripe_charge(cc, mm, yy, cvv, proxy=None, retry_without_proxy=True):
+    """Stripe $1 charge check wrapper with retry logic"""
+    status, response = check_stripe_card(cc, mm, yy, cvv, proxy)
+    
+    # If proxy error and retry is enabled, try without proxy
+    if "Proxy Error" in response and retry_without_proxy and proxy:
+        status, response = check_stripe_card(cc, mm, yy, cvv, None)
+        if "Proxy Error" not in response:
+            response = response + " (No Proxy)"
+    
+    return status, response
 
 def is_premium_user(user_id):
     """Check if user is premium"""

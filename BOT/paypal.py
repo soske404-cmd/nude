@@ -541,10 +541,19 @@ def extract_card(text):
 def extract_cards(text):
     return re.findall(r'(\d{12,19}\|\d{1,2}\|\d{2,4}\|\d{3,4})', text)
 
-def check_paypal(cc, mm, yy, cvv, proxy=None):
-    """Full Paypal check with proxy support"""
+def check_paypal(cc, mm, yy, cvv, proxy=None, retry_without_proxy=True):
+    """Full Paypal check with proxy support and retry logic"""
     gate = PaypalGate(proxy=proxy)
-    return gate.check_card(cc, mm, yy, cvv)
+    status, response = gate.check_card(cc, mm, yy, cvv)
+    
+    # If proxy error and retry is enabled, try without proxy
+    if "Proxy Error" in response and retry_without_proxy and proxy:
+        gate_no_proxy = PaypalGate(proxy=None)
+        status, response = gate_no_proxy.check_card(cc, mm, yy, cvv)
+        if "Proxy Error" not in response:
+            response = response + " (No Proxy)"
+    
+    return status, response
 
 def is_free_user(user_id):
     try:

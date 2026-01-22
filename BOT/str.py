@@ -131,7 +131,7 @@ def get_status_flag(raw_response):
     else:
         return "Declined ❌"
 
-async def check_autostripe(site, cc, proxy=None):
+async def check_autostripe(site, cc, proxy=None, retry_without_proxy=True):
     url = f"{AUTOSTRIPE_BASE_URL}/gateway={AUTOSTRIPE_GATEWAY}/key={AUTOSTRIPE_KEY}/site={site}/cc={cc}"
     try:
         # Configure proxy transport if provided
@@ -147,6 +147,15 @@ async def check_autostripe(site, cc, proxy=None):
     except httpx.TimeoutException:
         return "Timeout"
     except httpx.ProxyError:
+        # Retry without proxy if enabled
+        if retry_without_proxy and proxy:
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    response = await client.get(url)
+                    result = response.text.strip() if response.text else "No Response"
+                    return result + " (No Proxy)"
+            except:
+                return "Proxy Error"
         return "Proxy Error"
     except:
         return "Error"

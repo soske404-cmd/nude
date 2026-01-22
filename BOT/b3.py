@@ -409,9 +409,17 @@ def get_owner_link():
     return "https://t.me/gitsus"
 
 
-# Wrapper for async
-def check_b3(cc, mm, yy, cvv, proxy=None):
-    return check_b3_card(cc, mm, yy, cvv, proxy)
+# Wrapper for async with retry logic
+def check_b3(cc, mm, yy, cvv, proxy=None, retry_without_proxy=True):
+    status, response = check_b3_card(cc, mm, yy, cvv, proxy)
+    
+    # If proxy error and retry is enabled, try without proxy
+    if "Proxy Error" in response and retry_without_proxy and proxy:
+        status, response = check_b3_card(cc, mm, yy, cvv, None)
+        if "Proxy Error" not in response:
+            response = response + " (No Proxy)"
+    
+    return status, response
 
 
 @Client.on_message(filters.command("b3") & ~filters.edited)
